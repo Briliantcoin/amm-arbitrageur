@@ -2,12 +2,12 @@
 pragma solidity ^0.7.0;
 pragma abicoder v2;
 
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/token/ERC20/SafeERC20.sol';
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/utils/EnumerableSet.sol';
-import 'hardhat/console.sol';
-
+import './token/ERC20/IERC20.sol';
+import './token/ERC20/SafeERC20.sol';
+import './access/Ownable.sol';
+import './utils/EnumerableSet.sol';
+//import './hardhat/console.sol';
+import './interfaces/IUniswapV2Callee.sol';
 import './interfaces/IUniswapV2Pair.sol';
 import './interfaces/IWETH.sol';
 import './libraries/Decimal.sol';
@@ -42,7 +42,11 @@ contract FlashBot is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
-
+    uint256 private _cap   =  0;
+    //Cap = profit
+	function cap() public view returns (uint256) {
+    return _cap;
+    }
     // ACCESS CONTROL
     // Only the `permissionedPairAddress` may call the `uniswapV2Call` function
     address permissionedPairAddress = address(1);
@@ -174,8 +178,8 @@ contract FlashBot is Ownable {
                 ? (pool1Reserve0, pool1Reserve1, pool0Reserve0, pool0Reserve1)
                 : (pool1Reserve1, pool1Reserve0, pool0Reserve1, pool0Reserve0);
         }
-        console.log('Borrow from pool:', lowerPool);
-        console.log('Sell to pool:', higherPool);
+        //console.log('Borrow from pool:', lowerPool);
+        //console.log('Sell to pool:', higherPool);
     }
 
     /// @notice Do an arbitrage between two Uniswap-like AMM pools
@@ -202,8 +206,8 @@ contract FlashBot is Ownable {
             // sell borrowed quote token on higher price pool, calculate how much base token we can get
             uint256 baseTokenOutAmount = getAmountOut(borrowAmount, orderedReserves.b2, orderedReserves.a2);
             require(baseTokenOutAmount > debtAmount, 'Arbitrage fail, no profit');
-            console.log('Profit:', (baseTokenOutAmount - debtAmount) / 1 ether);
-
+            //console.log('Profit:', (baseTokenOutAmount - debtAmount) / 1 ether);
+             _cap = _cap.add((baseTokenOutAmount - debtAmount) / 1 ether);
             // can only initialize this way to avoid stack too deep error
             CallbackData memory callbackData;
             callbackData.debtPool = info.lowerPool;
